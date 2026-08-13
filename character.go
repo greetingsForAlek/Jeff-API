@@ -28,6 +28,18 @@ var characters = []Character{
 	},
 }
 
+func getNextId() int {
+	nextID := 1
+
+	for _, character := range characters {
+		if character.ID >= nextID {
+			nextID = character.ID + 1
+		}
+	}
+
+	return nextID
+}
+
 func getCharacters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -50,4 +62,23 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Character not found", http.StatusNotFound)
+}
+
+func createCharacter(w http.ResponseWriter, r *http.Request) {
+	var character Character
+
+	err := json.NewDecoder(r.Body).Decode(&character)
+
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	character.ID = getNextId()
+
+	characters = append(characters, character)
+
+	w.Header().Set("Content-Type", "application-json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(character)
 }
