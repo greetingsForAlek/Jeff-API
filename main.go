@@ -8,6 +8,7 @@ func main() {
 	http.HandleFunc("GET /characters", getCharacters)
 	http.HandleFunc("GET /characters/{id}", getCharacter)
 	http.HandleFunc("POST /characters", createCharacter)
+	http.HandleFunc("DELETE /characters/{id}", deleteCharacter)
 
 	println("Server running on http://localhost:8080")
 

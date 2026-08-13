@@ -82,3 +82,22 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(character)
 }
+
+func deleteCharacter(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+
+	if err != nil {
+		http.Error(w, "Invalid character ID", http.StatusBadRequest)
+		return
+	}
+
+	for i, character := range characters {
+		if character.ID == id {
+			characters = append(characters[:i], characters[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	http.Error(w, "Character not found", http.StatusNotFound)
+}
