@@ -1,3 +1,3 @@
 module jeff-api
 
-go 1.2.4
+go 1.26.5

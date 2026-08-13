@@ -5,7 +5,8 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/characters", getCharacters)
+	http.HandleFunc("GET /characters", getCharacters)
+	http.HandleFunc("GET /characters/{id}", getCharacter)
 
 	println("Server running on http://localhost:8080")
 
