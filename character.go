@@ -101,3 +101,34 @@ func deleteCharacter(w http.ResponseWriter, r *http.Request) {
 
 	http.Error(w, "Character not found", http.StatusNotFound)
 }
+
+func updateCharacter(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+
+	if err != nil {
+		http.Error(w, "Invalid character ID", http.StatusBadRequest)
+		return
+	}
+
+	var updatedCharacter Character
+
+	err = json.NewDecoder(r.Body).Decode(&updatedCharacter)
+
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	for i, character := range characters {
+		if character.ID == id {
+			updatedCharacter.ID = id
+			characters[i] = updatedCharacter
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(updatedCharacter)
+			return
+		}
+	}
+
+	http.Error(w, "Character not found", http.StatusNotFound)
+}
