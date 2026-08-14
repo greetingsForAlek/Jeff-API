@@ -24,7 +24,7 @@ var characters = []Character{
 	},
 	{
 		ID: 2,
-		Name: "Mr. Paper",
+		Name: "Mr Paper",
 		Description: "The main villain",
 		Alignment: "Evil",
 	},
@@ -59,9 +59,27 @@ func validateCharacter(character Character) error {
 }
 
 func getCharacters(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	query := r.URL.Query()
 
-	json.NewEncoder(w).Encode(characters)
+	alignmentFilter := query.Get("alignment")
+	nameFilter := query.Get("name")
+
+	var results []Character
+
+	for _, character := range characters {
+		if alignmentFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
+			continue
+		}
+
+		if nameFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
+			continue
+		}
+
+		results = append(results, character)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
 }
 
 func getCharacter(w http.ResponseWriter, r *http.Request) {
