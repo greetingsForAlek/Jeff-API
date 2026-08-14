@@ -129,16 +129,47 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		offset = parsed
 	}
 
-	for _, character := range characters {
-		if alignmentFilter != "" && !strings.EqualFold(character.Name, alignmentFilter) {
+	rows, err := db.Query(`
+		SELECT id, name, description, alignment
+		FROM characters
+	`)
+
+	if err != nil {
+		http.Error(w, "Failed to fetch characters", http.StatusInternalServerError)
+		return
+	} 
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var character Character
+
+		err := rows.Scan(
+			&character.ID,
+			&character.Name,
+			&character.Description,
+			&character.Alignment,
+		)
+
+		if err != nil {
+			http.Error(w, "Failed to read character", http.StatusInternalServerError)
+			return
+		}
+
+		if alignmentFilter != "" && !strings.EqualFold(character.Alignment, alignmentFilter) {
 			continue
 		}
 
-		if nameFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
+		if nameFilter != "" && strings.EqualFold(character.Name, nameFilter) {
 			continue
 		}
 
 		results = append(results, character)
+	}
+
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Failed to read characters", http.StatusInternalServerError)
+		return
 	}
 
 	descending := order == "desc"
@@ -176,6 +207,8 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	total := len(results)
+
 	if offset >= len(results) {
 		results = []Character{}
 	} else {
@@ -188,7 +221,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 
 	response := CharacterResponse {
 		Data: results,
-		Total: len(results),
+		Total: total,
 		Limit: limit,
 		Offset: offset,
 	}
