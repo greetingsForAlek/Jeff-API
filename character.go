@@ -249,7 +249,7 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 }
 
 func createCharacter(w http.ResponseWriter, r *http.Request) {
-	var character Character
+	var character Character 
 
 	err := json.NewDecoder(r.Body).Decode(&character)
 
@@ -265,12 +265,32 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	character.ID = getNextId()
+	result, err := db.Exec(`
+		INSERT INTO characters (name, description, alignment)
+		VALUES (?, ?, ?)
+	`,
+		character.Name,
+		character.Description,
+		character.Alignment,
+	)
 
-	characters = append(characters, character)
+	if err != nil {
+		http.Error(w, "Failed to create character", http.StatusInternalServerError)
+		return
+	}
 
-	w.Header().Set("Content-Type", "application-json")
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		http.Error(w, "Failed to get character ID", http.StatusInternalServerError)
+		return
+	}
+
+	character.ID = int(id)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	json.NewEncoder(w).Encode(character)
 }
 
