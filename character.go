@@ -15,6 +15,13 @@ type Character struct {
 	Alignment string `json:"alignment"`
 }
 
+type CharacterResponse struct {
+	Data []Character `json:"data"`
+	Total int `json:"total"`
+	Limit int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
 var characters = []Character{
 	{
 		ID: 1,
@@ -113,8 +120,15 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		results = results[:limit]
 	}
 
+	response := CharacterResponse {
+		Data: results,
+		Total: len(characters),
+		Limit: limit,
+		Offset: offset,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	json.NewEncoder(w).Encode(response)
 }
 
 func getCharacter(w http.ResponseWriter, r *http.Request) {
