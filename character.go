@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Character struct {
@@ -40,6 +42,22 @@ func getNextId() int {
 	return nextID
 }
 
+func validateCharacter(character Character) error {
+	if strings.TrimSpace(character.Name) == "" {
+		return errors.New("name is required.")
+	}
+
+	if strings.TrimSpace(character.Description) == "" {
+		return errors.New("description is required")
+	}
+
+	if strings.TrimSpace(character.Alignment) == "" {
+		return errors.New("type is required")
+	}
+
+	return nil
+}
+
 func getCharacters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -71,6 +89,13 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = validateCharacter(character)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -116,6 +141,13 @@ func updateCharacter(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = validateCharacter(updatedCharacter)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
