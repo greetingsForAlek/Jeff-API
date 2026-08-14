@@ -64,7 +64,32 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	alignmentFilter := query.Get("alignment")
 	nameFilter := query.Get("name")
 
+	limit := 0
+	offset := 0
+
 	var results []Character
+
+		if value := query.Get("limit"); value != "" {
+		parsed, err := strconv.Atoi(value);
+
+		if err != nil || parsed < 0 {
+			http.Error(w, "Invalid limit", http.StatusBadRequest)
+			return
+		}
+
+		limit = parsed
+	}
+
+	if value := query.Get("offset"); value != "" {
+		parsed, err := strconv.Atoi(value)
+
+		if err != nil || parsed < 0 {
+			http.Error(w, "Invalid Offset", http.StatusBadRequest)
+			return
+		}
+
+		offset = parsed
+	}
 
 	for _, character := range characters {
 		if alignmentFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
@@ -76,6 +101,16 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		}
 
 		results = append(results, character)
+	}
+
+	if offset >= len(results) {
+		results = []Character{}
+	} else {
+		results = results[offset:]
+	}
+
+	if limit > 0 && limit < len(results) {
+		results = results[:limit]
 	}
 
 	w.Header().Set("Content-Type", "application/json")
