@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -74,9 +75,39 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	limit := 0
 	offset := 0
 
+	sortBy := query.Get("sort")
+	order := query.Get("order")
+
+	if sortBy != "" {
+		switch sortBy {
+		case "id", "name", "alignment":
+			//Valid
+
+		default:
+			http.Error(w, "Invalid sort field", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if order != "" {
+		switch order {
+		case "asc", "desc":
+			// Valid
+
+		default:
+			http.Error(w, "Invalid sort order", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if order != "" && sortBy == "" {
+		http.Error(w, "Order requires a sort field", http.StatusBadRequest)
+		return
+	}
+
 	var results []Character
 
-		if value := query.Get("limit"); value != "" {
+	if value := query.Get("limit"); value != "" {
 		parsed, err := strconv.Atoi(value);
 
 		if err != nil || parsed < 0 {
@@ -99,7 +130,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, character := range characters {
-		if alignmentFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
+		if alignmentFilter != "" && !strings.EqualFold(character.Name, alignmentFilter) {
 			continue
 		}
 
@@ -108,6 +139,41 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		}
 
 		results = append(results, character)
+	}
+
+	descending := order == "desc"
+
+	if sortBy != "" {
+		sort.Slice(results, func(i, j int) bool {
+			switch sortBy {
+			case "id":
+				if descending {
+					return results[i].ID > results[j].ID
+				}
+				return results[i].ID < results[j].ID
+
+			case "name":
+				left := strings.ToLower(results[i].Name)
+				right := strings.ToLower(results[j].Name)
+
+				if descending {
+					return left > right
+				}
+
+				return left < right
+
+			case "alignment":
+				left := strings.ToLower(results[i].Alignment)
+				right := strings.ToLower(results[j].Alignment)
+
+				if descending {
+					return left > right
+				}
+				return left < right
+			}
+
+			return false
+		})
 	}
 
 	if offset >= len(results) {
@@ -122,7 +188,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 
 	response := CharacterResponse {
 		Data: results,
-		Total: len(characters),
+		Total: len(results),
 		Limit: limit,
 		Offset: offset,
 	}
