@@ -337,16 +337,36 @@ func updateCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, character := range characters {
-		if character.ID == id {
-			updatedCharacter.ID = id
-			characters[i] = updatedCharacter
+	result, err := db.Exec(`
+		UPDATE characters
+		SET name = ?, description = ?, alignment = ?
+		WHERE id = ?
+	`,
+		updatedCharacter.Name,
+		updatedCharacter.Description,
+		updatedCharacter.Alignment,
+		id,
+	)
 
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(updatedCharacter)
-			return
-		}
+	if err != nil {
+		http.Error(w, "Failed to check update", http.StatusInternalServerError)
+		return
 	}
 
-	http.Error(w, "Character not found", http.StatusNotFound)
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		http.Error(w, "Failed to check update", http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "Character not found", http.StatusNotFound)
+		return
+	}
+
+	updatedCharacter.ID = id
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updatedCharacter)
 }
