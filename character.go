@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -23,33 +24,6 @@ type CharacterResponse struct {
 	Offset int `json:"offset"`
 }
 
-var characters = []Character{
-	{
-		ID: 1,
-		Name: "Jeff",
-		Description: "The main character",
-		Alignment: "Good",
-	},
-	{
-		ID: 2,
-		Name: "Mr Paper",
-		Description: "The main villain",
-		Alignment: "Evil",
-	},
-}
-
-func getNextId() int {
-	nextID := 1
-
-	for _, character := range characters {
-		if character.ID >= nextID {
-			nextID = character.ID + 1
-		}
-	}
-
-	return nextID
-}
-
 func validateCharacter(character Character) error {
 	if strings.TrimSpace(character.Name) == "" {
 		return errors.New("name is required.")
@@ -60,7 +34,7 @@ func validateCharacter(character Character) error {
 	}
 
 	if strings.TrimSpace(character.Alignment) == "" {
-		return errors.New("type is required")
+		return errors.New("alignment is required")
 	}
 
 	return nil
@@ -237,15 +211,31 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, character := range characters {
-		if character.ID == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(character)
-			return
-		}
+	var character Character
+
+	err = db.QueryRow(`
+		SELECT id, name, description, alignment
+		FROM characters
+		WHERE id = ?
+	`, id).Scan(
+		&character.ID,
+		&character.Name,
+		&character.Description,
+		&character.Alignment,
+	)
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "Character not found", http.StatusNotFound)
+		return
 	}
 
-	http.Error(w, "Character not found", http.StatusNotFound)
+	if err != nil {
+		http.Error(w, "Failed to fetch character", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(character)
 }
 
 func createCharacter(w http.ResponseWriter, r *http.Request) {
@@ -302,15 +292,29 @@ func deleteCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, character := range characters {
-		if character.ID == id {
-			characters = append(characters[:i], characters[i+1:]...)
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+	result, err := db.Exec(`
+		DELETE FROM characters
+		WHERE id = ?
+	`, id)
+
+	if err != nil {
+		http.Error(w, "Failed to delete character", http.StatusInternalServerError)
+		return
 	}
 
-	http.Error(w, "Character not found", http.StatusNotFound)
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		http.Error(w, "Failed to check deletion", http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "Character not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func updateCharacter(w http.ResponseWriter, r *http.Request) {
