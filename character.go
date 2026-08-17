@@ -16,6 +16,7 @@ type Character struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
 	Alignment string `json:"alignment"`
+	Image string `json:"image"`
 }
 
 // The expected response
@@ -39,6 +40,10 @@ func validateCharacter(character Character) error {
 
 	if strings.TrimSpace(character.Alignment) == "" {
 		return errors.New("alignment is required") // Error if there is no provided alignment
+	}
+
+	if strings.TrimSpace(character.Image) == "" {
+		return errors.New("image is required")
 	}
 
 	return nil // Nil, because there are no further errors.
@@ -118,7 +123,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 
 	// Query the Database
 	rows, err := db.Query(`
-		SELECT id, name, description, alignment
+		SELECT id, name, description, alignment, image
 		FROM characters
 	`)
 
@@ -138,6 +143,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 			&character.Name,
 			&character.Description,
 			&character.Alignment,
+			&character.Image,
 		)
 
 		// Throw error if the Character Read failed.
@@ -238,7 +244,7 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 
 	// Query the database
 	err = db.QueryRow(`
-		SELECT id, name, description, alignment
+		SELECT id, name, description, alignment, image
 		FROM characters
 		WHERE id = ?
 	`, id).Scan(
@@ -246,6 +252,7 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 		&character.Name,
 		&character.Description,
 		&character.Alignment,
+		&character.Image,
 	)
 
 	if err == sql.ErrNoRows { // Error if there are no rows that were found, meaning the character was not found.
@@ -282,12 +289,13 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 
 	// Query the database to insert a new character
 	result, err := db.Exec(`
-		INSERT INTO characters (name, description, alignment)
-		VALUES (?, ?, ?)
+		INSERT INTO characters (name, description, alignment, image)
+		VALUES (?, ?, ?, ?)
 	`,
 		character.Name,
 		character.Description,
 		character.Alignment,
+		character.Image,
 	)
 
 	if err != nil { // Check for an error with the database
@@ -373,12 +381,13 @@ func updateCharacter(w http.ResponseWriter, r *http.Request) {
 	// Query the database
 	result, err := db.Exec(`
 		UPDATE characters
-		SET name = ?, description = ?, alignment = ?
+		SET name = ?, description = ?, alignment = ?, image = ?
 		WHERE id = ?
 	`,
 		updatedCharacter.Name,
 		updatedCharacter.Description,
 		updatedCharacter.Alignment,
+		updatedCharacter.Image,
 		id,
 	)
 

@@ -24,7 +24,8 @@ func initDB() error {
 			id INTEGER PRIMARY KEY,
 			name TEXT NOT NULL,
 			description TEXT NOT NULL,
-			alignment TEXT NOT NULL
+			alignment TEXT NOT NULL,
+			image TEXT NOT NULL
 		)
 	`)
 
