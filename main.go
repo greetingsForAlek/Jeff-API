@@ -1,8 +1,9 @@
 package main
 
 import (
-	"net/http"
 	"log"
+	"net/http"
+	"os"
 )
 
 // The MAIN function
@@ -21,5 +22,9 @@ func main() {
 
 	println("Server running on http://localhost:8080") // Tell the user that the server is running
 
-	http.ListenAndServe(":8080", nil) // Listen and serve!
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	http.ListenAndServe(":"+port, nil) // Listen and serve!
 }
