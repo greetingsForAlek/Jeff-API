@@ -25,7 +25,8 @@ func initDB() error {
 			name TEXT NOT NULL,
 			description TEXT NOT NULL,
 			alignment TEXT NOT NULL,
-			image TEXT NOT NULL
+			image TEXT NOT NULL,
+			canon INTEGER NOT NULL CHECK (canon IN (0, 1))
 		)
 	`)
 
