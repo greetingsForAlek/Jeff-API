@@ -17,6 +17,7 @@ type Character struct {
 	Description string `json:"description"`
 	Alignment string `json:"alignment"`
 	Image string `json:"image"`
+	Canon bool `json:"canon"`
 }
 
 // The expected response
@@ -46,6 +47,10 @@ func validateCharacter(character Character) error {
 		return errors.New("image is required")
 	}
 
+	if character.Canon != true && character.Canon != false {
+		return errors.New("canon is required")
+	}
+
 	return nil // Nil, because there are no further errors.
 }
 
@@ -56,6 +61,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	// Get the alignment and name
 	alignmentFilter := query.Get("alignment")
 	nameFilter := query.Get("name")
+	canonFilter := query.Get("canon")
 
 	// Limit and Offset, for searching.
 	limit := 0
@@ -68,7 +74,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	// Check if the user has provided SortBy.
 	if sortBy != "" {
 		switch sortBy {
-		case "id", "name", "alignment":
+		case "id", "name", "alignment", "canon":
 			//Valid
 
 		default:
@@ -93,6 +99,19 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 	if order != "" && sortBy == "" {
 		http.Error(w, "Order requires a sort field", http.StatusBadRequest) // Error if there is order, but not sortBy.
 		return
+	}
+
+	var canon *bool
+
+	if canonFilter != "" {
+		parsed, err := strconv.ParseBool(canonFilter)
+
+		if err != nil {
+			http.Error(w, "Invalid canon value", http.StatusBadRequest)
+			return
+		}
+
+		canon = &parsed
 	}
 
 	var results []Character // A slice of characters
@@ -123,7 +142,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 
 	// Query the Database
 	rows, err := db.Query(`
-		SELECT id, name, description, alignment, image
+		SELECT id, name, description, alignment, image, canon
 		FROM characters
 	`)
 
@@ -144,6 +163,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 			&character.Description,
 			&character.Alignment,
 			&character.Image,
+			&character.Canon,
 		)
 
 		// Throw error if the Character Read failed.
@@ -158,7 +178,12 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check if the Name matches the provided name filter.
-		if nameFilter != "" && strings.EqualFold(character.Name, nameFilter) {
+		if nameFilter != "" && !strings.EqualFold(character.Name, nameFilter) {
+			continue
+		}
+
+		// Check if the Canon value matches the canon filter.
+		if canon != nil && character.Canon != *canon {
 			continue
 		}
 
@@ -204,6 +229,7 @@ func getCharacters(w http.ResponseWriter, r *http.Request) {
 				return left < right
 			}
 
+
 			return false // Return false if nothing matches
 		})
 	}
@@ -244,7 +270,7 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 
 	// Query the database
 	err = db.QueryRow(`
-		SELECT id, name, description, alignment, image
+		SELECT id, name, description, alignment, image, canon
 		FROM characters
 		WHERE id = ?
 	`, id).Scan(
@@ -253,6 +279,7 @@ func getCharacter(w http.ResponseWriter, r *http.Request) {
 		&character.Description,
 		&character.Alignment,
 		&character.Image,
+		&character.Canon,
 	)
 
 	if err == sql.ErrNoRows { // Error if there are no rows that were found, meaning the character was not found.
@@ -289,13 +316,14 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 
 	// Query the database to insert a new character
 	result, err := db.Exec(`
-		INSERT INTO characters (name, description, alignment, image)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO characters (name, description, alignment, image, canon)
+		VALUES (?, ?, ?, ?, ?)
 	`,
 		character.Name,
 		character.Description,
 		character.Alignment,
 		character.Image,
+		character.Canon,
 	)
 
 	if err != nil { // Check for an error with the database
@@ -381,13 +409,14 @@ func updateCharacter(w http.ResponseWriter, r *http.Request) {
 	// Query the database
 	result, err := db.Exec(`
 		UPDATE characters
-		SET name = ?, description = ?, alignment = ?, image = ?
+		SET name = ?, description = ?, alignment = ?, image = ?, canon = ?
 		WHERE id = ?
 	`,
 		updatedCharacter.Name,
 		updatedCharacter.Description,
 		updatedCharacter.Alignment,
 		updatedCharacter.Image,
+		updatedCharacter.Canon,
 		id,
 	)
 
