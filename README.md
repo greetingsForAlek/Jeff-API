@@ -28,6 +28,9 @@ Name should look like: `/characters?name=Jeff`
 ### Alignment:
 Alignment should look like: `/characters?alignment=Neutral`
 
+### Canon:
+Canon should look like: `/characters?canon=true`
+
 ### Sort
 Sort sorts by a specific field, such as:
 `/characters?sort=name`, `characters?sort=alignment` or `characters?sort=id`.
@@ -39,12 +42,14 @@ you can use asc (ascending) like this: `/characters?sort=name&order=asc`,
 or you can use desc (descending) like this: `characters?sort=name&order=desc`
 
 ## CREATING CHARACTERS
-To create a character, you can POST query `/characters`. You must send a JSON object containing the name, description and alignment. Alignment is normally Good, Bad or Neutral.
+To create a character, you can POST query `/characters`. You must send a JSON object containing the name, description, alignment, image and wether the character is canon or not. Alignment is normally Good, Bad or Neutral. The Image is normally a link to an image, which could be just an image from the web or from a site like Cloudinary or sites like that. Canon is just a boolean (true/false).
 
 ### The Request
 The JSON should look like this:
 
-`{"name":"Jeff", "description":"The main character", "alignment":"Good"}`
+`{"name":"Jeff", "description":"The main character", "alignment":"Good", "image": "image-url", "canon": true}`.
+
+Obviously, replace image-url with the URL to your image.
 
 ## UPDATING CHARACTERS
 To update a character, you can do an UPDATE query to `/characters/idhere`. obviously replace idhere with
