@@ -6,6 +6,21 @@ import (
 	"os"
 )
 
+func enableCORS(next http.Handler) http.Handler { // enable CORS
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r);
+	})
+}
+
 // The MAIN function
 func main() {
 	err := initDB() // Initialise the database
@@ -26,5 +41,5 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	http.ListenAndServe(":"+port, nil) // Listen and serve!
+	http.ListenAndServe(":"+port, enableCORS(http.DefaultServeMux)) // Listen and serve!
 }
