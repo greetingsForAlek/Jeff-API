@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,29 @@ func enableCORS(next http.Handler) http.Handler { // enable CORS
 	})
 }
 
+// Function to verify the admin password that allows for admin access to the admin website
+func verifyPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Password string
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	correctPassword := os.Getenv("ADMIN_PASSWORD")
+
+	if data.Password != correctPassword {
+		http.Error(w, "Incorrect password", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"success":true}`));
+}
+
 // The MAIN function
 func main() {
 	err := initDB() // Initialise the database
@@ -34,6 +58,7 @@ func main() {
 	http.HandleFunc("POST /characters", createCharacter) // createCharacter route
 	http.HandleFunc("DELETE /characters/{id}", deleteCharacter) // deleteCharacter route
 	http.HandleFunc("PUT /characters/{id}", updateCharacter) // updateCharacter route
+	http.HandleFunc("POST /verifyPassword", verifyPassword) // verifyPassword route
 
 	println("Server running on http://localhost:8080") // Tell the user that the server is running
 
